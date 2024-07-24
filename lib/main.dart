@@ -118,8 +118,6 @@ class Item {
 
 class InventoryScreen extends StatelessWidget {
   final TextEditingController _categoryController = TextEditingController();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _quantityController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -152,7 +150,7 @@ class InventoryScreen extends StatelessWidget {
                   itemCount: provider.categories.keys.length,
                   itemBuilder: (context, index) {
                     final category = provider.categories.keys.elementAt(index);
-                    return ExpansionTile(
+                    return ListTile(
                       title: Text(category),
                       trailing: IconButton(
                         icon: Icon(Icons.delete),
@@ -160,82 +158,15 @@ class InventoryScreen extends StatelessWidget {
                           _showDeleteConfirmationDialog(context, category);
                         },
                       ),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            children: [
-                              TextField(
-                                controller: _nameController,
-                                decoration:
-                                    InputDecoration(labelText: 'Item Name'),
-                              ),
-                              TextField(
-                                controller: _quantityController,
-                                decoration:
-                                    InputDecoration(labelText: 'Quantity'),
-                                keyboardType: TextInputType.number,
-                              ),
-                              ElevatedButton(
-                                onPressed: () {
-                                  final name = _nameController.text;
-                                  final quantity = int.tryParse(_quantityController.text) ?? 0;
-                                  if (name.isNotEmpty) {
-                                    context
-                                        .read<InventoryProvider>()
-                                        .addItem(category, name, quantity);
-                                  }
-                                },
-                                child: Text('Add Item'),
-                              ),
-                            ],
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                CategoryItemsScreen(category: category),
                           ),
-                        ),
-                        for (int i = 0;
-                            i < provider.categories[category]!.length;
-                            i++)
-                          ListTile(
-                            title: Text(
-                                '${provider.categories[category]![i].name} - ${provider.categories[category]![i].quantity}'),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.remove),
-                                  onPressed: () {
-                                    if (provider
-                                            .categories[category]![i].quantity >
-                                        0) {
-                                      provider.updateItemQuantity(
-                                          category,
-                                          i,
-                                          provider.categories[category]![i]
-                                                  .quantity -
-                                              1);
-                                    }
-                                  },
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.add),
-                                  onPressed: () {
-                                    provider.updateItemQuantity(
-                                        category,
-                                        i,
-                                        provider.categories[category]![i]
-                                                .quantity +
-                                            1);
-                                  },
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.delete),
-                                  onPressed: () {
-                                    provider.removeItem(category, i);
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
+                        );
+                      },
                     );
                   },
                 );
@@ -271,6 +202,97 @@ class InventoryScreen extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class CategoryItemsScreen extends StatelessWidget {
+  final String category;
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _quantityController = TextEditingController();
+
+  CategoryItemsScreen({required this.category});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Items in $category'),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _nameController,
+              decoration: InputDecoration(labelText: 'Item Name'),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _quantityController,
+              decoration: InputDecoration(labelText: 'Quantity'),
+              keyboardType: TextInputType.number,
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = _nameController.text;
+              final quantity = int.tryParse(_quantityController.text) ?? 0;
+              if (name.isNotEmpty) {
+                context
+                    .read<InventoryProvider>()
+                    .addItem(category, name, quantity);
+              }
+            },
+            child: Text('Add Item'),
+          ),
+          Expanded(
+            child: Consumer<InventoryProvider>(
+              builder: (context, provider, child) {
+                final items = provider.categories[category] ?? [];
+                return ListView.builder(
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(
+                          '${items[index].name} - ${items[index].quantity}'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.remove),
+                            onPressed: () {
+                              if (items[index].quantity > 0) {
+                                provider.updateItemQuantity(
+                                    category, index, items[index].quantity - 1);
+                              }
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.add),
+                            onPressed: () {
+                              provider.updateItemQuantity(
+                                  category, index, items[index].quantity + 1);
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: () {
+                              provider.removeItem(category, index);
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
